@@ -1,0 +1,26 @@
+# 🔒 Ignorar credenciales y configuraciones sensibles
+.env
+*.pem
+
+# ⚡ Ignorar dependencias de Node.js
+node_modules/
+package-lock.json
+
+# 🚀 Ignorar logs y archivos temporales
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.out
+*.pid
+*.seed
+
+# 🛑 Ignorar archivos de sistema
+.DS_Store
+Thumbs.db
+
+# ⚙️ Ignorar archivos de `pm2` si lo usas
+pm2/logs/
+pm2/pids/
+pm2/dump.pm2
