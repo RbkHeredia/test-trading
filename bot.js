@@ -29,7 +29,7 @@ async function scalping() {
       return;
   }
   
-  if (!activeTrade && currentPrice > lastPrice * 1.02) {
+  if (!activeTrade && currentPrice > lastPrice * 1.005) {
       console.log("🚀 Comprando...");
       await buyToken(ethers.utils.parseEther("0.0166"));
       buyPrice = currentPrice;
