@@ -31,7 +31,7 @@ async function scalping() {
   
   if (!activeTrade && currentPrice > lastPrice * 1.02) {
       console.log("🚀 Comprando...");
-      await buyToken(ethers.utils.parseEther("0.1"));
+      await buyToken(ethers.utils.parseEther("0.0166"));
       buyPrice = currentPrice;
       activeTrade = true;
       await sendEmail("🚀 Compra realizada", `Compra ejecutada a ${buyPrice} USD.`);
