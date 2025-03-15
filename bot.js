@@ -18,11 +18,11 @@ async function scalping() {
   if (!lastPrice) lastPrice = currentPrice;
   console.log(`📊 Precio Actual: $${currentPrice}`);
 
-  const ma5 = await getMovingAverage("BNBUSDT", 5);
+  /* const ma5 = await getMovingAverage("BNBUSDT", 5);
   if (currentPrice < ma5) {
       console.log("⚠️ Precio por debajo de la media móvil, evitando compra.");
       return;
-  }
+  } */
 
   if (await isHighVolatility("BNBUSDT")) {
       console.log("⚠️ Alta volatilidad detectada, evitando operación.");
