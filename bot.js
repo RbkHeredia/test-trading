@@ -30,12 +30,12 @@ async function scalping() {
       return;
   } */
 
-  if (await isHighVolatility("BNBUSDT")) {
+  /* if (await isHighVolatility("BNBUSDT")) {
       console.log("⚠️ Alta volatilidad detectada, evitando operación.");
       return;
-  }
+  } */
   
-  if (!activeTrade && currentPrice > lastPrice * 1.0025) {
+  if (!activeTrade && currentPrice > lastPrice * 1.001) {
       console.log("🚀 Comprando...");
       await buyToken(ethers.parseEther("0.0166"));
       buyPrice = currentPrice;
