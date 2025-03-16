@@ -26,4 +26,14 @@ async function getPriceFromPancake() {
   }
 }
 
-module.exports = { getTokenPrice, getPriceFromPancake };
+async function getTokenPriceBNB_UNI() {
+  try {
+    const response = await axios.get("https://api.binance.com/api/v3/ticker/price?symbol=UNIBNB");
+    return parseFloat(response.data.price);
+  } catch (error) {
+    console.error("❌ Error obteniendo precio de BNB/UNI desde Binance:", error.message);
+    return null;
+  }
+}
+
+module.exports = { getTokenPrice, getPriceFromPancake, getTokenPriceBNB_UNI };

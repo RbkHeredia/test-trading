@@ -1,10 +1,11 @@
 const { provider, wallet, router } = require("./config/config");
 const { sendEmail } = require("./utils/email");
-const { getTokenPrice } = require("./utils/priceFetcher");
+const { getTokenPrice, getTokenPriceBNB_UNI } = require("./utils/priceFetcher");
 const { getMovingAverage, isHighVolatility } = require("./utils/indicators");
 const { buyToken } = require("./trading/buy");
 const { sellToken } = require("./trading/sell");
-const ethers = require("ethers");
+const { ethers } = require("ethers");
+
 
 console.log("🚀 Bot de Scalping con Stop-Loss iniciado...");
 
@@ -14,9 +15,14 @@ let buyPrice = null;
 
 async function scalping() {
   let currentPrice = await getTokenPrice();
-  if (!currentPrice) return;
+  let priceBNB_UNI = await getTokenPriceBNB_UNI();
+  if (!currentPrice || !priceBNB_UNI) {
+    console.log("⚠️ No se pudo obtener el precio del token. Esperando...");
+    return;
+  }
   if (!lastPrice) lastPrice = currentPrice;
-  console.log(`📊 Precio Actual: $${currentPrice}`);
+  console.log(`📊 Precio BNB/USDT Actual: $${currentPrice}`);
+  console.log(`📊 Precio BNB/UNI Actual: $${priceBNB_UNI}`);
 
   /* const ma5 = await getMovingAverage("BNBUSDT", 5);
   if (currentPrice < ma5) {
@@ -29,9 +35,9 @@ async function scalping() {
       return;
   }
   
-  if (!activeTrade && currentPrice > lastPrice * 1.002) {
+  if (!activeTrade && currentPrice > lastPrice * 1.0025) {
       console.log("🚀 Comprando...");
-      await buyToken(ethers.utils.parseEther("0.0166"));
+      await buyToken(ethers.parseEther("0.0166"));
       buyPrice = currentPrice;
       activeTrade = true;
       await sendEmail("🚀 Compra realizada", `Compra ejecutada a ${buyPrice} USD.`);
