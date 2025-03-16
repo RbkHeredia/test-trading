@@ -29,7 +29,7 @@ async function scalping() {
       return;
   }
   
-  if (!activeTrade && currentPrice > lastPrice * 1.005) {
+  if (!activeTrade && currentPrice > lastPrice * 1.002) {
       console.log("🚀 Comprando...");
       await buyToken(ethers.utils.parseEther("0.0166"));
       buyPrice = currentPrice;
@@ -37,7 +37,7 @@ async function scalping() {
       await sendEmail("🚀 Compra realizada", `Compra ejecutada a ${buyPrice} USD.`);
   }
 
-  if (activeTrade && (currentPrice < buyPrice * 0.97 || currentPrice > buyPrice * 1.05)) {
+  if (activeTrade && (currentPrice < buyPrice * 0.98 || currentPrice > buyPrice * 1.03)) {
       console.log("✅ Vendiendo...");
       await sellToken();
       activeTrade = false;
@@ -46,4 +46,4 @@ async function scalping() {
 
   lastPrice = currentPrice;
 }
-setInterval(scalping, 5000);
+setInterval(scalping, 30000);
