@@ -3,9 +3,9 @@ const { sendEmail } = require("../utils/email");
 const ethers = require("ethers");
 
 async function sellToken() {
-    const path = [process.env.TOKEN_ADDRESS, process.env.WBNB_ADDRESS];
+    const path = [process.env.WBNB_ADDRESS, process.env.USDT_ADDRESS];
     const tokenContract = new ethers.Contract(
-        process.env.TOKEN_ADDRESS,
+        process.env.WBNB_ADDRESS,
         ["function balanceOf(address owner) view returns (uint256)", "function approve(address spender, uint256 amount)"],
         wallet
     );
