@@ -109,4 +109,5 @@ async function swapTokens() {
     }
 }
 
-module.exports = { swapTokens };
+// ✅ Ejecutar el swap
+swapTokens();

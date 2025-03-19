@@ -1,29 +1,43 @@
-const { wallet, provider } = require("../config/config");
-const ethers = require("ethers");
+require("dotenv").config();
+const { ethers } = require("ethers");
+const { provider, wallet } = require("../config/config");
 
-async function checkBalance() {
+
+/* async function testWalletConnection() {
+    // Configurar proveedor de Alchemy
+    const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_URL);
+
+    // Conectar la billetera con el proveedor
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+    // Obtener dirección y balance de la billetera
+    const address = await wallet.getAddress();
+    const balance = await provider.getBalance(address);
+
+    console.log(`Dirección de la billetera: ${address}`);
+    console.log(`Balance en MATIC: ${ethers.formatEther(balance)} MATIC`);
+}
+
+testWalletConnection().catch(console.error);
+ */
+
+
+
+async function checkWETHBalance() {
     try {
-        console.log("🔍 Verificando saldo en la billetera...");
+        console.log("🚀 Consultando balance de WETH...");
 
-        // ✅ Obtener saldo en BNB
-        const balanceBNB = await provider.getBalance(wallet.address);
-        console.log(`💰 Saldo en BNB: ${ethers.formatEther(balanceBNB)} BNB`);
-
-        // ✅ Obtener saldo del token a tradear
-        const tokenContract = new ethers.Contract(
-            process.env.TOKEN_ADDRESS,
-            ["function balanceOf(address owner) view returns (uint)"],
-            wallet
+        const wethContract = new ethers.Contract(
+            process.env.WETH_ADDRESS,
+            ["function balanceOf(address owner) external view returns (uint256)"],
+            provider
         );
 
-        const tokenBalance = await tokenContract.balanceOf(wallet.address);
-        console.log(`🔹 Saldo de Tokens: ${ethers.formatEther(tokenBalance)} ${process.env.TOKEN_SYMBOL}`);
-
+        const balance = await wethContract.balanceOf(wallet.address);
+        console.log(`💰 Balance de WETH: ${ethers.formatUnits(balance, 18)} WETH`);
     } catch (error) {
-        console.error("❌ Error obteniendo saldo:", error);
+        console.error("❌ Error consultando balance de WETH:", error.message || error);
     }
 }
 
-// Ejecutar la función
-checkBalance();
-
+checkWETHBalance();
