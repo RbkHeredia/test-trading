@@ -23,6 +23,22 @@ let lastPrice = null; // Último precio registrado
 let isTrading = false; // Previene transacciones simultáneas
 let buyPrice = null;
 
+async function getFastGasPrice() {
+    try {
+        const response = await axios.get("https://api.polygonscan.com/api", {
+            params: {
+                module: "gastracker",
+                action: "gasoracle",
+                apikey: process.env.ETHERSCAN_API_KEY,
+            },
+        });
+        return ethers.parseUnits(response.data.result.FastGasPrice, "gwei");
+    } catch (error) {
+        console.error("⚠️ Error obteniendo gas price:", error.message);
+        return null;
+    }
+}
+
 async function buyWETH() {
   if (isTrading) return;
   isTrading = true;
@@ -79,14 +95,13 @@ async function buyWETH() {
     );
 
     const txData = txDataResponse.data;
+    const gasPrice = await getFastGasPrice();
     const tx = await wallet.sendTransaction({
       to: txData.to,
       data: txData.data,
       value: txData.value ? ethers.parseUnits(txData.value, "wei") : 0,
       gasLimit: txData.gas,
-      gasPrice: txData.gasPrice
-        ? ethers.parseUnits(txData.gasPrice, "wei")
-        : undefined,
+      gasPrice: gasPrice || ethers.parseUnits(txData.gasPrice, "wei"),
     });
 
     console.log(`📌 Compra enviada: ${tx.hash}`);
@@ -147,14 +162,13 @@ async function sellWETH() {
     );
 
     const txData = txDataResponse.data;
+    const gasPrice = await getFastGasPrice();
     const tx = await wallet.sendTransaction({
       to: txData.to,
       data: txData.data,
       value: txData.value ? ethers.parseUnits(txData.value, "wei") : 0,
       gasLimit: txData.gas,
-      gasPrice: txData.gasPrice
-        ? ethers.parseUnits(txData.gasPrice, "wei")
-        : undefined,
+      gasPrice: gasPrice || ethers.parseUnits(txData.gasPrice, "wei"),
     });
 
     console.log(`📌 Venta enviada: ${tx.hash}`);
