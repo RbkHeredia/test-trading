@@ -24,23 +24,6 @@ let isTrading = false;        // Previene transacciones simultáneas
 let buyPrice = null; 
 
 
-// ✅ Aprobar tokens antes del swap
-/* async function approveToken(spender, amount, tokenAddress) {
-    try {
-        const tokenABI = ["function approve(address spender, uint256 amount) external returns (bool)"];
-        const tokenContract = new ethers.Contract(tokenAddress, tokenABI, wallet);
-
-        console.log(`🔹 Aprobando gasto de ${ethers.formatUnits(amount, 6)} en ${tokenAddress} para ${spender}...`);
-        const tx = await tokenContract.approve(spender, amount.toString());
-        await tx.wait();
-        console.log(`✅ Aprobación exitosa: ${tx.hash}`);
-    } catch (error) {
-        console.error("❌ Error al aprobar token:", error.reason || error.message || error);
-    }
-} */
-
-
-// ✅ Comprar WETH con USDT
 async function buyWETH() {
     if (isTrading) return;
     isTrading = true;
@@ -117,33 +100,20 @@ async function sellWETH() {
         return;
     }
 
-    let quote;
-    let retries = 3;
-    while (retries > 0) {
-        quote = await getParaswapQuote(ethers.parseUnits(balanceWETH, 18), WETH, USDT);
-        if (quote) break;
-        console.log("⚠️ Error en la cotización, reintentando...");
-        retries--;
-    }
+    const amountToSell = ethers.parseUnits(balanceWETH, 18);
+    let quote = await getParaswapQuote(amountToSell, WETH, USDT);
     if (!quote) {
         console.log("❌ No se pudo obtener una cotización válida.");
         return;
     }
 
-    // 🔹 Revalidar el precio justo antes del swap
-    console.log("🔹 Verificando variación de precio antes de ejecutar la venta...");
-    let newQuote;
-    retries = 3;
-    while (retries > 0) {
-        newQuote = await getParaswapQuote(ethers.parseUnits(balanceWETH, 18), WETH, USDT);
-        if (newQuote && newQuote.destAmount === quote.destAmount) break;
-        console.warn("⚠️ El precio cambió, volviendo a cotizar...");
-        quote = newQuote;
-        retries--;
-    }
+    // 🔹 Verificar tolerancia de slippage antes de ejecutar
+    const SLIPPAGE_TOLERANCE = 0.005; // 0.5% de tolerancia
+    const maxAcceptablePrice = quote.destAmount * (1 - SLIPPAGE_TOLERANCE);
 
-    if (!newQuote) {
-        console.log("❌ No se pudo obtener una cotización estable, cancelando venta.");
+    let newQuote = await getParaswapQuote(amountToSell, WETH, USDT);
+    if (!newQuote || parseFloat(newQuote.destAmount) < maxAcceptablePrice) {
+        console.log(`⚠️ Cambio de precio fuera del margen aceptable. Cancelando venta.`);
         return;
     }
 
@@ -152,9 +122,9 @@ async function sellWETH() {
         const txDataResponse = await axios.post(`${paraswapAPI}/transactions/137`, {
             srcToken: WETH,
             destToken: USDT,
-            srcAmount: ethers.parseUnits(balanceWETH, 18).toString(),
-            destAmount: quote.destAmount,
-            priceRoute: quote,
+            srcAmount: amountToSell.toString(),
+            destAmount: newQuote.destAmount,
+            priceRoute: newQuote,
             userAddress: wallet.address
         }, { headers: { 'X-Partner': 'anon', 'User-Agent': 'Mozilla/5.0' } });
 
@@ -170,14 +140,16 @@ async function sellWETH() {
         console.log(`📌 Venta enviada: ${tx.hash}`);
         await tx.wait();
         console.log("✅ Venta exitosa.");
-        isTrading= false;
+        isTrading = false;
         buyPrice = null;
         sendEmail('Venta exitosa', `Se ha realizado la venta ${tx.hash}`);
     } catch (error) {
         console.error("❌ Error al ejecutar la venta:", error.response?.data || error.message);
         sendEmail('Error al ejecutar la venta', `${error.response?.data || error.message}`);
+        isTrading = false;
     }
 }
+
 
 
 
@@ -217,5 +189,27 @@ async function checkMarket() {
     setTimeout(checkMarket, CHECK_INTERVAL);
 }
 
-// ✅ Iniciar el bot de scalping
-checkMarket();
+async function initializeBot() {
+    console.log("🔄 Iniciando bot de scalping...");
+
+    // Consultar balances
+    let usdtBalance = await getBalance(USDT, 6);
+    let wethBalance = await getBalance(WETH, 18);
+
+    console.log(`💰 Saldo USDT: ${usdtBalance} | Saldo WETH: ${wethBalance}`);
+
+    if (parseFloat(wethBalance) > 0) {
+        console.log("⚠️ Hay WETH disponible, ejecutando venta antes de iniciar monitoreo...");
+        await sellWETH();
+        isTrading = true; // Evitar que se intente comprar mientras se vende
+    } else {
+        console.log("✅ No hay WETH pendiente, iniciando monitoreo normal.");
+    }
+
+    isTrading = false;
+    checkMarket(); // Iniciar el monitoreo después del chequeo
+}
+
+initializeBot();
+
+
