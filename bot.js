@@ -34,7 +34,7 @@ ws.on("open", () => {
 });
 
 const priceWindow = [];
-const WINDOW_SIZE = 20;
+const WINDOW_SIZE = 120;
 const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
 const RETURN_TO_MEAN_THRESHOLD = 0.002; // 0.2% arriba de la media para vender
 const STOP_LOSS_PERCENT = -0.01;
