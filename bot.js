@@ -37,6 +37,7 @@ const priceWindow = [];
 const WINDOW_SIZE = 20;
 const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
 const RETURN_TO_MEAN_THRESHOLD = 0.002; // 0.2% arriba de la media para vender
+const STOP_LOSS_PERCENT = -0.01;
 
 let isInitialized = false;
 
@@ -99,6 +100,15 @@ setInterval(async () => {
   }
 
   // Vender
+  if (isTrading && buyPrice !== null) {
+    const priceChange = (latestPrice - buyPrice) / buyPrice;
+  
+    if (priceChange <= STOP_LOSS_PERCENT) {
+      console.warn(`🔻 Activando Stop-Loss (${(priceChange * 100).toFixed(2)}%). Vendiendo a ${latestPrice}`);
+      await sellWETH(latestPrice);
+      return;
+    }
+  }
   if (isTrading && buyPrice !== null && latestPrice >= upperBound) {
     console.log(
       `🔴 Precio regresó a la media (${upperBound.toFixed(
