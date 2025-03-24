@@ -215,7 +215,11 @@ async function sellWETH(currentPrice) {
     console.log(`📌 Venta enviada: ${tx.hash}`);
     await tx.wait();
     console.log("✅ Venta exitosa.");
-    const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
+    
+    buyPrice = null;
+isTrading = false;
+txBuyHash = null;
+const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
     const profitUSDT =
       (currentPrice - buyPrice) *
       parseFloat(ethers.formatUnits(await getBalance(WETH, 18), 18));
@@ -228,8 +232,6 @@ async function sellWETH(currentPrice) {
       txBuyHash: "tx_buy_hash_placeholder", // puedes guardarlo desde buyWETH en una variable global si querés
       txSellHash: tx.hash,
     });
-    buyPrice = null;
-    isTrading = false;
   } catch (error) {
     console.error("❌ Error al ejecutar la venta:", error.message);
     isTrading = true;
