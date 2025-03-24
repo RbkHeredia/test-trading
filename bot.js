@@ -22,6 +22,9 @@ const WETH = process.env.WETH_ADDRESS;
 const SLIPPAGE_TOLERANCE = 0.005; // 0.5% de tolerancia
 const TRADE_AMOUNT = ethers.parseUnits("80", 6); // 30 USDT
 
+let consecutiveLosses = 0;
+const MAX_CONSECUTIVE_LOSSES = 3;
+
 let isTrading = false;
 let buyPrice = null;
 let latestPrice = null;
@@ -102,9 +105,22 @@ setInterval(async () => {
   // Vender
   if (isTrading && buyPrice !== null) {
     const priceChange = (latestPrice - buyPrice) / buyPrice;
-  
+
     if (priceChange <= STOP_LOSS_PERCENT) {
-      console.warn(`🔻 Activando Stop-Loss (${(priceChange * 100).toFixed(2)}%). Vendiendo a ${latestPrice}`);
+      consecutiveLosses++;
+      if (consecutiveLosses >= MAX_CONSECUTIVE_LOSSES) {
+        console.warn("🚫 Demasiadas pérdidas consecutivas. Pausando compras.");
+        isInitialized = false;
+        priceWindow.length = 0;
+        isTrading = false;
+        buyPrice = null;
+        return;
+      }
+      console.warn(
+        `🔻 Activando Stop-Loss (${(priceChange * 100).toFixed(
+          2
+        )}%). Vendiendo a ${latestPrice}`
+      );
       await sellWETH(latestPrice);
       return;
     }
@@ -215,11 +231,9 @@ async function sellWETH(currentPrice) {
     console.log(`📌 Venta enviada: ${tx.hash}`);
     await tx.wait();
     console.log("✅ Venta exitosa.");
+
     
-    buyPrice = null;
-isTrading = false;
-txBuyHash = null;
-const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
+    const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
     const profitUSDT =
       (currentPrice - buyPrice) *
       parseFloat(ethers.formatUnits(await getBalance(WETH, 18), 18));
@@ -232,6 +246,9 @@ const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
       txBuyHash: "tx_buy_hash_placeholder", // puedes guardarlo desde buyWETH en una variable global si querés
       txSellHash: tx.hash,
     });
+    buyPrice = null;
+    isTrading = false;
+    txBuyHash = null;
   } catch (error) {
     console.error("❌ Error al ejecutar la venta:", error.message);
     isTrading = true;
