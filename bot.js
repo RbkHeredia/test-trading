@@ -44,7 +44,7 @@ ws.on("open", async () => {
 });
 
 const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
-const RETURN_TO_MEAN_THRESHOLD = 0.002; // 0.2% arriba de la media para vender
+const RETURN_TO_MEAN_THRESHOLD = 0.004; // 0.2% arriba de la media para vender
 const STOP_LOSS_PERCENT = -0.005;
 
 let isInitialized = false;
@@ -188,9 +188,10 @@ async function sellWETH(currentPrice) {
 
   try {
     const balance = await getBalance(WETH, 18);
-    if (!balance || parseFloat(balance) <= 0)
+    if (!balance || parseFloat(balance) <= 0){
+      isTrading= false;
       throw new Error("No hay WETH suficiente.");
-
+    }
     const amount = ethers.parseUnits(balance, 18);
     const quote = await getParaswapQuote(amount, WETH, USDT);
     if (!quote) throw new Error("Cotización inválida.");
@@ -250,8 +251,8 @@ async function sellWETH(currentPrice) {
     isTrading = false;
     txBuyHash = null;
   } catch (error) {
-    console.error("❌ Error al ejecutar la venta:", error.message);
     isTrading = true;
+    console.error("❌ Error al ejecutar la venta:", error.message);
   }
 }
 
