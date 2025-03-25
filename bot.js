@@ -38,7 +38,7 @@ const WINDOW_SIZE = 96;
 
 ws.on("open", async () => {
   console.log("📡 Conectado a Binance WebSocket");
-  const precarga = await preloadPriceWindow("ETHUSDT", "1m", WINDOW_SIZE);
+  const precarga = await preloadPriceWindow("ETHUSDT", "15m", WINDOW_SIZE);
   priceWindow.push(...precarga);
   isInitialized = true;
 });
