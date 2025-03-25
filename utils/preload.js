@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-async function preloadPriceWindow(symbol = "ETHUSDT", interval = "1m", windowSize = 120) {
+async function preloadPriceWindow(symbol = "ETHUSDT", interval = "15m", windowSize = 120) {
   try {
     const response = await axios.get("https://api.binance.com/api/v3/klines", {
       params: {

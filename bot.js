@@ -33,7 +33,7 @@ let referencePrice = null;
 
 const ws = new WebSocket("wss://stream.binance.com:9443/ws/ethusdt@trade");
 const priceWindow = [];
-const WINDOW_SIZE = 120;
+const WINDOW_SIZE = 96;
 
 
 ws.on("open", async () => {
@@ -44,7 +44,7 @@ ws.on("open", async () => {
 });
 
 const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
-const RETURN_TO_MEAN_THRESHOLD = 0.004; // 0.2% arriba de la media para vender
+const RETURN_TO_MEAN_THRESHOLD = 0.005; // 0.2% arriba de la media para vender
 const STOP_LOSS_PERCENT = -0.005;
 
 let isInitialized = false;
@@ -129,7 +129,7 @@ setInterval(async () => {
     await sellWETH(latestPrice);
     return;
   }
-}, 30000); // cada 30 segundos
+}, 180000); // cada 3 minutos
 
 async function buyWETH(currentPrice) {
   if (isTrading) return;
