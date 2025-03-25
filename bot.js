@@ -8,6 +8,7 @@ const { getBalance } = require("./trading/getBallance");
 const { getParaswapQuote } = require("./trading/getParaswap");
 const connectDB = require("./db");
 const Trade = require("./models/trade");
+const { preloadPriceWindow } = require("./utils/preload");
 connectDB();
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
@@ -31,16 +32,20 @@ let latestPrice = null;
 let referencePrice = null;
 
 const ws = new WebSocket("wss://stream.binance.com:9443/ws/ethusdt@trade");
-
-ws.on("open", () => {
-  console.log("📡 Conectado a Binance WebSocket");
-});
-
 const priceWindow = [];
 const WINDOW_SIZE = 120;
+
+
+ws.on("open", async () => {
+  console.log("📡 Conectado a Binance WebSocket");
+  const precarga = await preloadPriceWindow("ETHUSDT", "1m", WINDOW_SIZE);
+  priceWindow.push(...precarga);
+  isInitialized = true;
+});
+
 const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
 const RETURN_TO_MEAN_THRESHOLD = 0.002; // 0.2% arriba de la media para vender
-const STOP_LOSS_PERCENT = -0.01;
+const STOP_LOSS_PERCENT = -0.005;
 
 let isInitialized = false;
 
@@ -61,18 +66,8 @@ setInterval(async () => {
     `🕒 Precio de referencia actualizado: ${referencePrice}, isTrading=${isTrading}`
   );
 
-  if (priceWindow.length < WINDOW_SIZE) {
-    console.log(
-      `⏳ Esperando llenar ventana de precios... (${priceWindow.length}/${WINDOW_SIZE})`
-    );
-    return;
-  }
+  
 
-  if (!isInitialized) {
-    isInitialized = true;
-    console.log("✅ Ventana llena. Estrategia de scalping activada.");
-    return;
-  }
 
   // Calcular estadísticas
   const mean = priceWindow.reduce((a, b) => a + b, 0) / priceWindow.length;
@@ -238,14 +233,19 @@ async function sellWETH(currentPrice) {
       (currentPrice - buyPrice) *
       parseFloat(ethers.formatUnits(await getBalance(WETH, 18), 18));
 
-    await Trade.create({
-      buyPrice,
-      sellPrice: currentPrice,
-      gainPercent,
-      profitUSDT,
-      txBuyHash: "tx_buy_hash_placeholder", // puedes guardarlo desde buyWETH en una variable global si querés
-      txSellHash: tx.hash,
-    });
+      try {
+        await Trade.create({
+          buyPrice,
+          sellPrice: currentPrice,
+          gainPercent,
+          profitUSDT,
+          txBuyHash: "tx_buy_hash_placeholder",
+          txSellHash: tx.hash,
+        });
+      } catch (dbError) {
+        console.error("⚠️ Error al guardar el trade en la base de datos:", dbError.message);
+        // Opcional: guardar en archivo local como respaldo
+      }
     buyPrice = null;
     isTrading = false;
     txBuyHash = null;
