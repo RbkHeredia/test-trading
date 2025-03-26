@@ -43,7 +43,7 @@ ws.on("open", async () => {
   isInitialized = true;
 });
 
-const DEVIATION_FACTOR = 2; // Usamos 2 desviaciones estándar
+const DEVIATION_FACTOR = 1; // Usamos 2 desviaciones estándar
 const RETURN_TO_MEAN_THRESHOLD = 0.005; // 0.2% arriba de la media para vender
 const STOP_LOSS_PERCENT = -0.005;
 
