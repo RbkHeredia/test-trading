@@ -2,6 +2,7 @@
 const { ethers } = require("ethers");
 const WebSocket = require("ws");
 require("dotenv").config();
+const Buy = require("./models/buy");
 const axios = require("axios");
 const { sendEmail } = require("./utils/email");
 const { getBalance } = require("./trading/getBallance");
@@ -35,7 +36,6 @@ const ws = new WebSocket("wss://stream.binance.com:9443/ws/ethusdt@trade");
 const priceWindow = [];
 const WINDOW_SIZE = 96;
 
-
 ws.on("open", async () => {
   console.log("📡 Conectado a Binance WebSocket");
   const precarga = await preloadPriceWindow("ETHUSDT", "15m", WINDOW_SIZE);
@@ -66,9 +66,6 @@ setInterval(async () => {
     `🕒 Precio de referencia actualizado: ${referencePrice}, isTrading=${isTrading}`
   );
 
-  
-
-
   // Calcular estadísticas
   const mean = priceWindow.reduce((a, b) => a + b, 0) / priceWindow.length;
   const stdDev = Math.sqrt(
@@ -98,28 +95,7 @@ setInterval(async () => {
   }
 
   // Vender
-  if (isTrading && buyPrice !== null) {
-    const priceChange = (latestPrice - buyPrice) / buyPrice;
 
-    if (priceChange <= STOP_LOSS_PERCENT) {
-      consecutiveLosses++;
-      if (consecutiveLosses >= MAX_CONSECUTIVE_LOSSES) {
-        console.warn("🚫 Demasiadas pérdidas consecutivas. Pausando compras.");
-        isInitialized = false;
-        priceWindow.length = 0;
-        isTrading = false;
-        buyPrice = null;
-        return;
-      }
-      console.warn(
-        `🔻 Activando Stop-Loss (${(priceChange * 100).toFixed(
-          2
-        )}%). Vendiendo a ${latestPrice}`
-      );
-      await sellWETH(latestPrice);
-      return;
-    }
-  }
   if (isTrading && buyPrice !== null && latestPrice >= upperBound) {
     console.log(
       `🔴 Precio regresó a la media (${upperBound.toFixed(
@@ -170,6 +146,8 @@ async function buyWETH(currentPrice) {
     await tx.wait();
     buyPrice = currentPrice;
     isTrading = true;
+    Buy.create({ buyPrice: latestPrice });
+
     console.log(`✅ Compra exitosa a ${buyPrice.toFixed(6)} USDT.`);
   } catch (error) {
     isTrading = false;
@@ -188,8 +166,8 @@ async function sellWETH(currentPrice) {
 
   try {
     const balance = await getBalance(WETH, 18);
-    if (!balance || parseFloat(balance) <= 0){
-      isTrading= false;
+    if (!balance || parseFloat(balance) <= 0) {
+      isTrading = false;
       throw new Error("No hay WETH suficiente.");
     }
     const amount = ethers.parseUnits(balance, 18);
@@ -228,25 +206,28 @@ async function sellWETH(currentPrice) {
     await tx.wait();
     console.log("✅ Venta exitosa.");
 
-    
     const gainPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
     const profitUSDT =
       (currentPrice - buyPrice) *
       parseFloat(ethers.formatUnits(await getBalance(WETH, 18), 18));
 
-      try {
-        await Trade.create({
-          buyPrice,
-          sellPrice: currentPrice,
-          gainPercent,
-          profitUSDT,
-          txBuyHash: "tx_buy_hash_placeholder",
-          txSellHash: tx.hash,
-        });
-      } catch (dbError) {
-        console.error("⚠️ Error al guardar el trade en la base de datos:", dbError.message);
-        // Opcional: guardar en archivo local como respaldo
-      }
+    try {
+      await Trade.create({
+        buyPrice,
+        sellPrice: currentPrice,
+        gainPercent,
+        profitUSDT,
+        txBuyHash: "tx_buy_hash_placeholder",
+        txSellHash: tx.hash,
+      });
+    } catch (dbError) {
+      console.error(
+        "⚠️ Error al guardar el trade en la base de datos:",
+        dbError.message
+      );
+      // Opcional: guardar en archivo local como respaldo
+      isTrading = false;
+    }
     buyPrice = null;
     isTrading = false;
     txBuyHash = null;

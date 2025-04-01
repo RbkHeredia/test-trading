@@ -2,6 +2,7 @@
 const { ethers } = require("ethers");
 require("dotenv").config();
 const axios = require("axios");
+const Buy = require("./models/buy")
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -85,6 +86,7 @@ async function getFastGasPrice() {
 
     console.log(`✅ Compra enviada: ${tx.hash}`);
     await tx.wait();
+    await Buy.create({buyPrice:latestPrice })
     console.log("🎉 Compra manual completada con éxito");
 
   } catch (err) {
