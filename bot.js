@@ -22,7 +22,7 @@ const WETH = process.env.WETH_ADDRESS;
 
 // Configuración del Scalping
 const SLIPPAGE_TOLERANCE = 0.005; // 0.5% de tolerancia
-const TRADE_AMOUNT = ethers.parseUnits("80", 6); // 30 USDT
+const TRADE_AMOUNT = ethers.parseUnits("50", 6); // 30 USDT
 
 let consecutiveLosses = 0;
 const MAX_CONSECUTIVE_LOSSES = 3;
